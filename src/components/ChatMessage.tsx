@@ -2,7 +2,9 @@ import { HStack, Box, Button, Text, IconButton, Icon, VStack } from 'native-base
 import React from 'react'
 import { Ionicons } from '@expo/vector-icons';
 import uuid from 'react-native-uuid';
-import { ChatMessageParams, currentUser, chatBotUser, User, Option } from '../data'
+import { ChatMessageParams, currentUser, chatBotUser, User, Option } from '../data';
+import { TypingAnimation } from "react-native-typing-animation";
+import { background } from 'native-base/lib/typescript/theme/styled-system';
 
 const isSameUser = (user: User, userAgainst: User) => {
     return JSON.stringify(user) === JSON.stringify(userAgainst);
@@ -10,7 +12,11 @@ const isSameUser = (user: User, userAgainst: User) => {
 const sleep = (ms:number) =>
   new Promise(resolve => setTimeout(resolve, ms));
 
-const ChatMessage:React.FC<ChatMessageParams> = ({id, msg, user, options, pending}) => {
+
+interface ChatMessageProps extends ChatMessageParams {
+    onSend: Function
+}
+const ChatMessage:React.FC<ChatMessageProps> = ({id, msg, user, options, onSend}) => {
     const [optionState, setOptionState] = React.useState(options);
     const position = isSameUser(user, chatBotUser) ? "left" : "right";
     const [isPending, setIsPending] = React.useState<boolean>(true);
@@ -24,7 +30,8 @@ const ChatMessage:React.FC<ChatMessageParams> = ({id, msg, user, options, pendin
 
     const handleOptionPress = ({title, value} : Option) => {
         //Render to the chatscreen
-        console.log(value);
+        onSend(title, currentUser);
+        onSend(value, chatBotUser);
         setOptionState([]);
     }
     return (
@@ -36,7 +43,10 @@ const ChatMessage:React.FC<ChatMessageParams> = ({id, msg, user, options, pendin
             >
                 {
                     isPending && position==='left' ? (
-                        <Text>Hello</Text>
+                        <Box padding={3} bgColor="muted.300">
+
+                            <TypingAnimation dotMargin={6}/>
+                        </Box>
                     ) : (
                         <>
                             <HStack>

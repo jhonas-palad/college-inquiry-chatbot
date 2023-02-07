@@ -4,7 +4,7 @@ import React from 'react'
 import { RootStackParamList } from '../navigation';
 import { useRoute, useNavigation, RouteProp  } from '@react-navigation/native';
 import { ChatHeader, ChatMessage } from '../components';
-import { makeChatMessage, messages, chatBotUser, currentUser, ChatMessageParams } from '../data';
+import { makeChatMessage, messages, chatBotUser, currentUser, ChatMessageParams, User } from '../data';
 import { Ionicons } from '@expo/vector-icons';
 import { useSocket } from '../hooks/useSocket';
 
@@ -14,10 +14,11 @@ type ChatScreenRouteProp = RouteProp<RootStackParamList, 'chat'>;
 
 const ChatScreen: React.FC = () => {
     const route = useRoute<ChatScreenRouteProp>();
+    const initialMsg = React.useRef(route.params.msg === 'Ask me' ? '' : route.params.msg).current;
     const navigation = useNavigation();
     const ws: WebSocket | null = useSocket();
     const [chatMsgs, setChatMsgs] = React.useState<Array<ChatMessageParams>>([]);
-    const [messageInput, setMessageInput] = React.useState('');
+    const [messageInput, setMessageInput] = React.useState(initialMsg);
     const [errorState, setErrorState] = React.useState({
         msg: '',
         showErr: false,
@@ -54,15 +55,17 @@ const ChatScreen: React.FC = () => {
         })
     }, []);
 
+    const handleAppendMsg = React.useCallback((message: string, user: User) => {
+        const chatMsg = makeChatMessage(message, user, {});
+        setChatMsgs(prevMsgs => [...prevMsgs, chatMsg]);
+    },[chatMsgs]);
     
-    
-    const handleSend = React.useCallback((message: string) => {
+    const handleSend = React.useCallback((message: string, user: User) => {
         if(!message) return;
 
         try{
             ws?.send(message);
-            const chatMsg = makeChatMessage(message, currentUser, {});
-            setChatMsgs((prevMsgs) => [...prevMsgs, chatMsg]);
+            handleAppendMsg(message, user);
         }
         catch(err){
             console.log(err);
@@ -77,7 +80,7 @@ const ChatScreen: React.FC = () => {
                 keyboardVerticalOffset={100}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 flex={1}>
-                    <Box flex={1}>
+                    <Box marginBottom={5} flex={1}>
                         <FlatList
                             paddingX={3}
                             flex={1}
@@ -88,7 +91,7 @@ const ChatScreen: React.FC = () => {
                             keyExtractor={item=> item.id.toString()}
                             renderItem={({item})=> {
                                 
-                                return <ChatMessage id={item.id} msg={item.msg} user={item.user} options={item.options} pending={item.pending} />
+                                return <ChatMessage onSend={handleAppendMsg} id={item.id} msg={item.msg} user={item.user} options={item.options} pending={item.pending} />
                             }}
                         />
                     </Box>
@@ -118,10 +121,11 @@ const ChatScreen: React.FC = () => {
                             placeholder='Enter you message here'/>
                         <IconButton 
                             // disabled={!messageInput}
-                            onPress={()=> handleSend(messageInput)}
+                            onPress={()=> handleSend(messageInput, currentUser)}
                             icon={<Icon as={Ionicons} name="ios-send" color="blue.600"/>}
                             _pressed={{
-
+                                bg:"none",
+                                opacity: 0.5
                             }}
                             variant="ghost"
                         />
