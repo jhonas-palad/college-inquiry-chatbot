@@ -1,6 +1,6 @@
-import { View, StyleSheet } from 'react-native'
+
 import React from 'react'
-import { Avatar, Box, Heading, Icon,IconButton } from 'native-base';
+import { Avatar, Box, Icon,IconButton } from 'native-base';
 import {Octicons } from '@expo/vector-icons';
 
 
@@ -19,14 +19,11 @@ const HomeHeader: React.FC = (props: any) => {
           bg: "muted.100"
         }}
       />
-      {/* <Heading>
-          Home
-      </Heading> */}
           <Avatar
-            bg="red.900"
             size="md"
+            source={require('./icon.png')}
           >
-            JP
+            
           </Avatar>
     </Box>
 

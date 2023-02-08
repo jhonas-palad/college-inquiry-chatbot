@@ -29,14 +29,16 @@ const HistoryCard : React.FC<Props> = ({chatHistory}) => {
             padding={3.5} 
             alignItems="center" 
             position="relative" 
-            bg="light.200" 
+            bg="light.100" 
+            borderColor="light.200"
+            borderWidth="1"
             borderRadius={12}>
             <Box>
-                <Icon as={AntDesign} name="questioncircle" size="md" color=""/>
+                <Icon as={AntDesign} name="questioncircle" size="md" color="muted.600"/>
             </Box>
             <Box paddingX={5}>
-                <Heading fontSize="md">{msgInfo.title}</Heading>
-                <Text fontSize="md" numberOfLines={1}>{msgInfo.response}</Text>
+                <Heading fontSize="md" color="muted.800">{msgInfo.title}</Heading>
+                <Text fontSize="md" color="muted.600" numberOfLines={1}>{msgInfo.response}</Text>
             </Box>
         </Pressable>
     )

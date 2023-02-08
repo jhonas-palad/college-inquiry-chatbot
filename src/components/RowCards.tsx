@@ -16,7 +16,9 @@ const CardExample: React.FC<CardProps> = ({id, msg, icon, as}) => {
             _pressed={{opacity: 0.8}}
             marginY={1.5}
             rounded={12}
-            bgColor={id === '1' ? 'amber.500' : "light.200"}
+            bgColor={id === '1' ? 'red.800' : "light.100"}
+            borderColor="light.200"
+            borderWidth="1"
             paddingX={3}
             paddingTop={1}
             paddingBottom={4}
@@ -35,7 +37,7 @@ const CardExample: React.FC<CardProps> = ({id, msg, icon, as}) => {
                         )
                     }
                     <Icon as={as} name={icon} 
-                        color={id === '1' ? 'light.50' : 'darkText'}
+                        color={id === '1' ? 'light.50' : 'muted.600'}
                         size={id === '1' ? '2xl' : 'xl'}
                     />
                 </>

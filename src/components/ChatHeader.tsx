@@ -26,7 +26,6 @@ const ChatHeader: React.FC<Props> = ({navigation, route, back, options, chatMsgs
         console.log(err);
       }
     }
-    console.log(route);
     if(chatMsgs.length && !route.params?.chatHistoryId){
       setData();
     }
