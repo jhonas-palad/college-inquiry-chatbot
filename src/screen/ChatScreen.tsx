@@ -1,13 +1,13 @@
-import { Box, Text, Input, KeyboardAvoidingView,ScrollView, IconButton, Icon, FlatList} from 'native-base'
-import {Platform, Keyboard} from 'react-native'
+import { Box, Input, KeyboardAvoidingView,ScrollView, IconButton, Icon, FlatList, Text, Badge, HStack, Pressable} from 'native-base'
+import {Platform} from 'react-native'
 import React from 'react'
 import { RootStackParamList } from '../navigation';
 import { useRoute, useNavigation, RouteProp  } from '@react-navigation/native';
 import { ChatHeader, ChatMessage } from '../components';
-import { makeChatMessage, messages, chatBotUser, currentUser, ChatMessageParams, User } from '../data';
+import { makeChatMessage, chatBotUser, currentUser, ChatMessageParams, User } from '../data';
 import { Ionicons } from '@expo/vector-icons';
-import { useSocket } from '../hooks/useSocket';
-
+import { getChatHistory } from '../api/AsyncStorage';
+import { useSocket } from '../hooks';
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'chat'>;
 
@@ -18,54 +18,80 @@ const ChatScreen: React.FC = () => {
     const navigation = useNavigation();
     const ws: WebSocket | null = useSocket();
     const [chatMsgs, setChatMsgs] = React.useState<Array<ChatMessageParams>>([]);
-    const [messageInput, setMessageInput] = React.useState(initialMsg);
-    const [errorState, setErrorState] = React.useState({
+    const [messageInput, setMessageInput] = React.useState(initialMsg as string);
+    const [isViewOnly, setIsViewOnly] = React.useState(false);
+    const [connectionState, setConnectionState] = React.useState({
         msg: '',
         showErr: false,
-    })
+        connected: false,
+    });
+    const flatlistRef = React.useRef();
+    // console.log(route);
+    React.useEffect(()=>{
+        navigation.setOptions({
+            headerShown: true,
+            title: 'Home',
+            header: (opts: any) => {
+              return <ChatHeader chatMsgs={chatMsgs} {...opts}/>
+            }
+        })
+    }, [chatMsgs]);
+
     React.useEffect(()=>{
         if(ws){
+            ws.onopen = ()=>{
+                setConnectionState((prev)=> ({...prev, connected: true}));
+            }
             ws.onmessage = ({data}: MessageEvent) => {
                 //Bot response
                 const responseData = JSON.parse(data);
                 const {text, options} = responseData;
                 
-                const botReply = makeChatMessage(text, chatBotUser, options ?? {});
-                setChatMsgs(prevMsgs => [...prevMsgs, botReply]);
+                // const botReply = makeChatMessage(text, chatBotUser, options ?? {});
+                // setChatMsgs(prevMsgs => [...prevMsgs, botReply]);
+                handleAppendMsg(text, chatBotUser, options);
+                
             }
             ws.onclose = (e: CloseEvent) => {
-
             }
             ws.onerror = (event: Event) => {
                 console.log(event);
-                setErrorState({msg: 'An error occured', showErr:true});
+                setConnectionState((prev) => ({...prev, msg: 'An error occured', showErr:true}));
             }
         }
         return ()=> {
             console.log("close");
         }
     },[ws]);
-    React.useEffect(()=>{
-        navigation.setOptions({
-            headerShown: true,
-            title: 'Home',
-            header: (opts: any) => {
-              return <ChatHeader {...opts}/>
-            }
-        })
-    }, []);
 
-    const handleAppendMsg = React.useCallback((message: string, user: User) => {
-        const chatMsg = makeChatMessage(message, user, {});
+    const loadChatHistory = async (id : string) => {
+        try{
+            const {messages} = await getChatHistory(id);
+            setChatMsgs(messages);
+        }
+        catch(err){
+            console.log(err);
+        }
+    }
+    React.useEffect(()=>{
+        const {params} = route;
+        if(params?.chatHistoryId){
+            loadChatHistory(params.chatHistoryId);
+            setIsViewOnly(true);
+        }
+    }, [route]);
+
+    const handleAppendMsg = React.useCallback((message: string, user: User, options : any) => {
+        const chatMsg = makeChatMessage(message, user, options);
         setChatMsgs(prevMsgs => [...prevMsgs, chatMsg]);
     },[chatMsgs]);
     
     const handleSend = React.useCallback((message: string, user: User) => {
         if(!message) return;
-
+        
         try{
             ws?.send(message);
-            handleAppendMsg(message, user);
+            handleAppendMsg(message, user, {});
         }
         catch(err){
             console.log(err);
@@ -80,8 +106,9 @@ const ChatScreen: React.FC = () => {
                 keyboardVerticalOffset={100}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 flex={1}>
-                    <Box marginBottom={5} flex={1}>
+                    <Box  flex={1}>
                         <FlatList
+                            ref={flatlistRef}
                             paddingX={3}
                             flex={1}
                             _light={{
@@ -91,11 +118,10 @@ const ChatScreen: React.FC = () => {
                             keyExtractor={item=> item.id.toString()}
                             renderItem={({item})=> {
                                 
-                                return <ChatMessage onSend={handleAppendMsg} id={item.id} msg={item.msg} user={item.user} options={item.options} pending={item.pending} />
+                                return <ChatMessage noDelay={isViewOnly} onSend={handleAppendMsg} id={item.id} msg={item.msg} user={item.user} options={item.options} pending={item.pending} />
                             }}
                         />
                     </Box>
-                    
                     <Box
                         paddingX={2}
                         paddingBottom={2}
@@ -109,27 +135,50 @@ const ChatScreen: React.FC = () => {
                             bg:"light.50"
                         }}
                     >
-                        <Input w="90%" p={3.5} 
-                            _focus={{bg:"light.200"}}
-                            onChangeText={setMessageInput}
-                            value={messageInput}
-                            borderWidth="0"
-                            fontSize="md"
-                            rounded="full"
-                            variant="filled" 
-                            bg="muted.100" 
-                            placeholder='Enter you message here'/>
-                        <IconButton 
-                            // disabled={!messageInput}
-                            onPress={()=> handleSend(messageInput, currentUser)}
-                            icon={<Icon as={Ionicons} name="ios-send" color="blue.600"/>}
-                            _pressed={{
-                                bg:"none",
-                                opacity: 0.5
-                            }}
-                            variant="ghost"
-                        />
+                        {
+                            isViewOnly ? (
+                                // <Pressable rounded={8} overflow="hidden" borderWidth="1" borderColor="coolGray.300" bg="blue.600" p="1.5">
+                                //     <HStack>
+                                //         <Text color="light.50">Share</Text>
+                                //     </HStack>
+                                // </Pressable>
+                                <Text>
+                                    View only
+                                </Text>
+                            ) : (
+                                <>
+                                    <Input w="90%" p={3.5} 
+                                        isDisabled={connectionState.connected}
+                                        _focus={{bg:"light.200"}}
+                                        onChangeText={setMessageInput}
+                                        value={messageInput}
+                                        borderWidth="0"
+                                        fontSize="md"
+                                        rounded="full"
+                                        variant="filled" 
+                                        bg="muted.100" 
+                                        placeholder='Enter you message here'/>
+                                    <IconButton
+                                        style={!connectionState.connected && !messageInput ? 
+                                            {
+                                                opacity: 0.5
+                                            } : {
+                                                opacity: 1
+                                            }}
+                                        disabled={!messageInput}
+                                        onPress={()=> handleSend(messageInput, currentUser)}
+                                        icon={<Icon as={Ionicons} name="ios-send" color="blue.600"/>}
+                                        _pressed={{
+                                            bg:"none",
+                                            opacity: 0.5
+                                        }}
+                                        variant="ghost"
+                                    />
+                                </>
+                            )
+                        }
                     </Box>
+                    
             </KeyboardAvoidingView>
         </Box>
         

@@ -108,11 +108,11 @@ export type ChatMessageParams = {
 
 export const makeChatMessage = (msg: string, user: User, options ?: any) : ChatMessageParams => {
     let cleanOpts : Array<Option> = [];
-    let optKeys = Object.keys(options);
+    let optKeys = Object.keys(options?? {});
+    console.log(optKeys, msg);
     if( optKeys.length !== 0){
         
         cleanOpts = optKeys.map((key: string)=> ({title:key, value: options[key].text}));
-        console.log(cleanOpts);
     }
     
     return {

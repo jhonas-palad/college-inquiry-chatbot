@@ -24,7 +24,6 @@ const CardExample: React.FC<CardProps> = ({id, msg, icon, as}) => {
             justifyContent={id === '1' ? 'center' : "flex-start"}
             marginRight={2}
             width={32}
-            shadow={1}
             onPress={handleOnPress}
         >
             <Center w="full" marginBottom={2}>

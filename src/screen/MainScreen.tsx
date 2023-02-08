@@ -1,32 +1,57 @@
 import { 
   Box, 
+  Button, 
   Text, 
   ScrollView, 
   HStack,
-  Center, 
-  FlatList,
   Heading,
-  Icon,
   VStack
 } from 'native-base';
 import {useNavigation} from '@react-navigation/native';
 import React from 'react'
-import HomeHeader from '../components/HomeHeader';
-import { AntDesign } from '@expo/vector-icons';
+import {HomeHeader, HistoryCard} from '../components';
 import { RowCards } from '../components';
+import { getChatHistory, clearAll } from '../api/AsyncStorage';
+import uuid from 'react-native-uuid';
+import { ChatHistoryContent } from '../context/ChatHistoryProvider';
+import { useChatHistory } from '../hooks';
+import { ChatHistoryData } from '../context/ChatHistoryProvider';
+
+
 
 const MainScreen : React.FC = () => {
     const navigation = useNavigation();
+    const [historyData, setHistoryData] = React.useState([]);
+    const {chatHistory} = useChatHistory() as ChatHistoryContent;
+
+    
     React.useEffect(()=>{
         navigation.setOptions({
             headerShown: true,
             title: 'Home',
-            header: ({navigation, route, options, back ,progress}: any ) => {
-              return <HomeHeader/>
+            header: (prop: any ) => {
+              return <HomeHeader {...prop}/>
             }  
         })
+    }, [navigation]);
+    React.useEffect(() => {
+      const asyncWrapper = async () => {
+        try{
+          const data = await getChatHistory();
+          setHistoryData(data as never);
+          
+        }catch(err){
+          console.log(err);
+        }
+      }
+      asyncWrapper();
+    }, [chatHistory]);
+    const handleClearHistory = React.useCallback(() => {
+      if(historyData){
+        clearAll();
+        setHistoryData([]);
+      }
     }, []);
-    
   return (
     <ScrollView flex={1} padding={5} _light={{bgColor:"light.50"}}>
 
@@ -42,55 +67,24 @@ const MainScreen : React.FC = () => {
       <Box >
         <HStack alignItems="center" justifyContent="space-between">
           <Text fontSize="xl" fontWeight="bold">History</Text>
-          <Text fontSize="sm" fontWeight="light">View all</Text>
+          <Button onPress={handleClearHistory} variant="ghost" _pressed={{bg:"none", opacity: 0.5}}><Text fontSize="sm" fontWeight="light">Clear all</Text></Button>
         </HStack>
-        <VStack>
-          <HStack
-            marginBottom={2}
-            padding={3.5} 
-            alignItems="center" 
-            position="relative" 
-            bg="light.200" 
-            borderRadius={12}>
-            <Box>
-              <Icon as={AntDesign} name="questioncircle" size="md" color=""/>
-            </Box>
-            <Box paddingX={5}>
-              <Heading fontSize="md">Hello</Heading>
-              <Text fontSize="md" numberOfLines={1}>Oh hello there</Text>
-            </Box>
-          </HStack>
-          <HStack
-            marginBottom={2}
-            padding={3.5} 
-            alignItems="center" 
-            position="relative" 
-            bg="light.200" 
-            borderRadius={12}>
-            <Box>
-              <Icon as={AntDesign} name="questioncircle" size="md" color=""/>
-            </Box>
-            <Box paddingX={5}>
-              <Heading fontSize="md">Hello</Heading>
-              <Text fontSize="md" numberOfLines={1}>Oh hello there</Text>
-            </Box>
-          </HStack>
-          <HStack
-            marginBottom={2}
-            padding={3.5} 
-            alignItems="center" 
-            position="relative" 
-            bg="light.200" 
-            borderRadius={12}>
-            <Box>
-              <Icon as={AntDesign} name="questioncircle" size="md" color=""/>
-            </Box>
-            <Box paddingX={5}>
-              <Heading fontSize="md">Hello</Heading>
-              <Text fontSize="md" numberOfLines={1}>Oh hello there</Text>
-            </Box>
-          </HStack>
-            
+        <VStack marginBottom={20}>
+          {
+            historyData.length === 0 ? (
+              <Text fontSize="md" fontWeight="light" color="light.500">Click on the Ask Me button or the examples above to get started</Text>
+            ) : (
+              historyData.map((item : ChatHistoryData)  => {
+                
+                return <HistoryCard key={uuid.v4().toString()} chatHistory={item}/>
+                
+              }
+                
+                )
+            )
+          }
+         
+          
         </VStack>
       </Box>
 

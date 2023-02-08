@@ -3,9 +3,8 @@ import React from 'react'
 import { Ionicons } from '@expo/vector-icons';
 import uuid from 'react-native-uuid';
 import { ChatMessageParams, currentUser, chatBotUser, User, Option } from '../data';
-import { TypingAnimation } from "react-native-typing-animation";
-import { background } from 'native-base/lib/typescript/theme/styled-system';
-
+import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 const isSameUser = (user: User, userAgainst: User) => {
     return JSON.stringify(user) === JSON.stringify(userAgainst);
 }
@@ -14,26 +13,41 @@ const sleep = (ms:number) =>
 
 
 interface ChatMessageProps extends ChatMessageParams {
-    onSend: Function
+    onSend: Function;
+    noDelay?: boolean;
 }
-const ChatMessage:React.FC<ChatMessageProps> = ({id, msg, user, options, onSend}) => {
+const ChatMessage:React.FC<ChatMessageProps> = ({id, msg, user, options, onSend, noDelay=false}) => {
     const [optionState, setOptionState] = React.useState(options);
     const position = isSameUser(user, chatBotUser) ? "left" : "right";
     const [isPending, setIsPending] = React.useState<boolean>(true);
     React.useEffect(()=>{
-        if(position === "left"){
+        if(position === "left" && !noDelay){
             sleep(2000).then(()=>{
-                setIsPending(false)
+                setIsPending(false);
+   
             })
+        }else{
+            setIsPending(false);
         }
+
     }, []);
 
     const handleOptionPress = ({title, value} : Option) => {
         //Render to the chatscreen
-        onSend(title, currentUser);
-        onSend(value, chatBotUser);
+        onSend(title, currentUser, {});
+        onSend(value, chatBotUser, {});
         setOptionState([]);
     }
+    const copyToClipboard = async (text : string) => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        try{
+            const toCopy = Array.isArray(text) ? text[0] : text;
+
+            await Clipboard.setStringAsync(toCopy);
+        }catch(err){
+            console.log(err);
+        }
+      };
     return (
 
             <VStack
@@ -43,15 +57,15 @@ const ChatMessage:React.FC<ChatMessageProps> = ({id, msg, user, options, onSend}
             >
                 {
                     isPending && position==='left' ? (
-                        <Box padding={3} bgColor="muted.300">
+                        <Box padding={3} rounded="full" bgColor="muted.200">
 
-                            <TypingAnimation dotMargin={6}/>
+                            <Text fontSize="lg" color="darkText">Typing...</Text>
                         </Box>
                     ) : (
                         <>
                             <HStack>
                                 <Box bg={position === "left" ? "muted.200" : "blue.600"} 
-                                    p={2.5} rounded={16}>
+                                    p={2.5} rounded={22}>
                                     <Text textAlign="left" color={position === "left" ? "darkText" : "white"} fontSize="lg">
                                         {msg}
                                     </Text>
@@ -59,6 +73,7 @@ const ChatMessage:React.FC<ChatMessageProps> = ({id, msg, user, options, onSend}
                                 {
                                     position === 'left' && (
                                         <IconButton 
+                                            onPress={()=> copyToClipboard(msg)}
                                             icon={<Icon as={Ionicons} name="copy-outline" color="light.800"/>}
                                             _pressed={{
                                                 bg:"none",
@@ -72,7 +87,7 @@ const ChatMessage:React.FC<ChatMessageProps> = ({id, msg, user, options, onSend}
                                 position === 'left' && optionState && (
                                     <HStack w="full" flexWrap="wrap">
                                         {
-                                            optionState.map((item : Option) => <Button onPress={() => handleOptionPress(item)}bg="amber.500" padding={2} rounded={10} marginY={1} marginRight={1} key={uuid.v4().toString()}>{item.title}</Button>)
+                                            optionState.map((item : Option) => <Button onPress={() => handleOptionPress(item)}bg="amber.500" padding={2} rounded={16} marginY={1} marginRight={1} key={uuid.v4().toString()}>{item.title}</Button>)
                                         }
                                     </HStack>
                                 )

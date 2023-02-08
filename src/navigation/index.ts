@@ -1,4 +1,4 @@
 export type RootStackParamList = {
     home: undefined;
-    chat: { msg: string, type: 'new' | 'old' };
+    chat: { msg?: string, type: 'new' | 'old', chatHistoryId?: string};
 };
