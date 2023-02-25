@@ -57,7 +57,7 @@ const MainScreen : React.FC = () => {
 
       <Box marginBottom={2}>
         <Heading fontSize="2xl" marginBottom={1}>
-          Hi, my name is <Text color="red.800">Ketty</Text>
+          College inquiry chatbot for <Text color="red.800">UBLC</Text>
         </Heading>
         <Text marginBottom={1} color="light.500">
           Ask some questions
