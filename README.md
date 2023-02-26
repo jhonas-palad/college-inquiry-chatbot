@@ -5,6 +5,8 @@ A college inquiry chatbot is an artificial intelligence (AI) tool designed to as
 
 The chatbot is programmed to answer frequently asked questions about the college's admission process, programs, campus life, and other related information. It can also provide users with links to additional resources, such as the college's website or social media pages.
 
+APK file: https://expo.dev/artifacts/eas/ayJbefNJUxGsDX1ic78PUL.apk
+
 ## Screenshots
 
 <img src="./assets/md/IMG_1787.PNG" alt="home" width="200">
