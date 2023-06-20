@@ -1,4 +1,4 @@
-import { Box, Input, KeyboardAvoidingView,ScrollView, IconButton, Icon, FlatList, Text, Badge, HStack, Pressable} from 'native-base'
+import { Box, Input, KeyboardAvoidingView, IconButton, Icon, FlatList, Text, Badge, HStack, Pressable} from 'native-base'
 import {Platform} from 'react-native'
 import React from 'react'
 import { RootStackParamList } from '../navigation';
@@ -20,11 +20,13 @@ const ChatScreen: React.FC = () => {
     const [chatMsgs, setChatMsgs] = React.useState<Array<ChatMessageParams>>([]);
     const [messageInput, setMessageInput] = React.useState(initialMsg as string);
     const [isViewOnly, setIsViewOnly] = React.useState(false);
+    const [connecting, setConnecting] = React.useState(false);
     const [connectionState, setConnectionState] = React.useState({
         msg: '',
         showErr: false,
         connected: false,
     });
+    const [disableSend, setDisableSend] = React.useState(false);
     const flatlistRef = React.useRef();
     // console.log(route);
     React.useEffect(()=>{
@@ -36,9 +38,17 @@ const ChatScreen: React.FC = () => {
             }
         })
     }, [chatMsgs]);
-
     React.useEffect(()=>{
+      if(!messageInput || !ws){
+        setDisableSend(true)
+      }else{
+        setDisableSend(false)
+      }
+    }, [ws, messageInput])
+    React.useEffect(()=>{
+      setConnecting(true);
         if(ws){
+            setConnecting(false);
             ws.onopen = ()=>{
                 setConnectionState((prev)=> ({...prev, connected: true}));
             }
@@ -159,13 +169,13 @@ const ChatScreen: React.FC = () => {
                                         bg="muted.100" 
                                         placeholder='Enter you message here'/>
                                     <IconButton
-                                        style={!connectionState.connected && !messageInput ? 
+                                        style={disableSend ? 
                                             {
                                                 opacity: 0.5
                                             } : {
                                                 opacity: 1
                                             }}
-                                        disabled={!messageInput}
+                                        disabled={disableSend}
                                         onPress={()=> handleSend(messageInput, currentUser)}
                                         icon={<Icon as={Ionicons} name="ios-send" color="blue.600"/>}
                                         _pressed={{
@@ -178,7 +188,15 @@ const ChatScreen: React.FC = () => {
                             )
                         }
                     </Box>
-                    
+                    {
+                      connecting ? (
+                        <Box background='blue.600' position="absolute" top={0} width='full' height="50" alignItems='center' justifyContent='center'>
+                          <Text color='muted.100' fontWeight='bold' fontSize='md'>
+                            Connecting
+                          </Text>
+                        </Box>
+                      ) : <></>
+                    }
             </KeyboardAvoidingView>
         </Box>
         

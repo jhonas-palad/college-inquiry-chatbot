@@ -1,6 +1,6 @@
 import React from 'react';
 
-const wsClientEndpoint = "wss://chatbotapi.site/chat";
+const wsClientEndpoint = "ws://172.104.74.41/chat";
 
 type Props = {
   onopen?: Function ,
@@ -26,7 +26,7 @@ export const useSocket = () : WebSocket | null => {
     };
 
     socket.onerror = (e) => {
-      console.log(`WebSocket Error: ${e.message}`);
+      console.log(`WebSocket Error: ${e}`);
     };
 
     socket.onclose = () => {
